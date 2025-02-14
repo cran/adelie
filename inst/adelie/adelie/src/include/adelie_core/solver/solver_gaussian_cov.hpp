@@ -1,14 +1,139 @@
 #pragma once
+#include <Eigen/Eigenvalues>
 #include <adelie_core/solver/solver_base.hpp>
 #include <adelie_core/solver/solver_gaussian_pin_cov.hpp>
-#include <adelie_core/state/state_gaussian_cov.hpp>
 #include <adelie_core/state/state_gaussian_pin_cov.hpp>
 #include <adelie_core/matrix/utils.hpp>
+#include <adelie_core/util/macros.hpp>
 
 namespace adelie_core {
 namespace solver {
 namespace gaussian {
 namespace cov {
+
+/**
+ * Updates all derived screen quantities for cov state.
+ * After the function finishes, all screen quantities in the base + cov class
+ * will be consistent with screen_set, and the state is otherwise effectively
+ * unchanged in the sense that other quantities dependent on screen states are unchanged.
+ */
+template <class StateType>
+inline void update_screen_derived(
+    StateType& state
+)
+{
+    using state_t = typename std::decay_t<StateType>;
+    using value_t = typename state_t::value_t;
+    using vec_value_t = typename state_t::vec_value_t;
+    using vec_index_t = typename state_t::vec_index_t;
+
+    update_screen_derived_base(state);
+
+    const auto& groups = state.groups;
+    const auto& group_sizes = state.group_sizes;
+    const auto& screen_set = state.screen_set;
+    const auto& screen_begins = state.screen_begins;
+    const auto& grad = state.grad;
+    auto& A = *state.A;
+    auto& screen_transforms = state.screen_transforms;
+    auto& screen_vars = state.screen_vars;
+    auto& screen_grad = state.screen_grad;
+    auto& screen_subset = state.screen_subset;
+    auto& screen_subset_order = state.screen_subset_order;
+    auto& screen_subset_ordered = state.screen_subset_ordered;
+
+    const auto old_screen_size = screen_transforms.size();
+    const auto new_screen_size = screen_set.size();
+    const int old_screen_value_size = screen_subset.size();
+    const int new_screen_value_size = (
+        (screen_begins.size() == 0) ? 0 : (
+            screen_begins.back() + group_sizes[screen_set.back()]
+        )
+    );
+
+    screen_transforms.resize(new_screen_size);
+    screen_vars.resize(new_screen_value_size, 0);
+    screen_grad.resize(new_screen_value_size, 0);
+
+    const auto max_gs = group_sizes.maxCoeff();
+    util::rowvec_type<value_t> buffer(max_gs * max_gs);
+
+    for (size_t i = old_screen_size; i < new_screen_size; ++i) {
+        const auto g = groups[screen_set[i]];
+        const auto gs = group_sizes[screen_set[i]];
+        const auto sb = screen_begins[i];
+
+        Eigen::Map<util::colmat_type<value_t>> A_gg(
+            buffer.data(), gs, gs
+        );
+
+        // compute covariance matrix
+        A.to_dense(g, gs, A_gg);
+
+        if (gs == 1) {
+            util::colmat_type<value_t, 1, 1> Q;
+            Q(0, 0) = 1;
+            screen_transforms[i] = Q;
+            screen_vars[sb] = A_gg(0, 0);
+            continue;
+        }
+
+        Eigen::SelfAdjointEigenSolver<util::colmat_type<value_t>> solver(A_gg);
+
+        /* update screen_transforms */
+        screen_transforms[i] = std::move(solver.eigenvectors());
+
+        /* update screen_vars */
+        const auto& D = solver.eigenvalues();
+        Eigen::Map<vec_value_t> svars(screen_vars.data() + sb, gs);
+        // numerical stability to remove small negative eigenvalues
+        svars.head(D.size()) = D.array() * (D.array() >= 0).template cast<value_t>(); 
+    }
+
+    /* update screen_grad */
+    for (size_t i = 0; i < new_screen_size; ++i) {
+        const auto g = groups[screen_set[i]];
+        const auto gs = group_sizes[screen_set[i]];
+        const auto sb = screen_begins[i];
+
+        Eigen::Map<vec_value_t>(
+            screen_grad.data() + sb,
+            gs
+        ) = grad.segment(g, gs);
+    }
+
+    /* update screen_subset */
+    screen_subset.resize(new_screen_value_size);
+    int n_processed = 0;
+    for (size_t ss_idx = old_screen_size; ss_idx < new_screen_size; ++ss_idx) {
+        const auto ss = screen_set[ss_idx];
+        const auto g = groups[ss];
+        const auto gs = group_sizes[ss];
+        Eigen::Map<vec_index_t>(
+            screen_subset.data() + old_screen_value_size + n_processed, gs
+        ) = vec_index_t::LinSpaced(gs, g, g + gs - 1);
+        n_processed += gs;
+    }
+
+    /* update screen_subset_order */
+    screen_subset_order.resize(new_screen_value_size);
+    std::iota(
+        std::next(screen_subset_order.begin(), old_screen_value_size),
+        screen_subset_order.end(),
+        old_screen_value_size
+    );
+    std::sort(
+        screen_subset_order.data(),
+        screen_subset_order.data() + screen_subset_order.size(),
+        [&](auto i, auto j) { return screen_subset[i] < screen_subset[j]; }
+    );
+
+    /* update screen_subset_ordered */
+    screen_subset_ordered.resize(new_screen_value_size);
+    for (size_t i = 0; i < screen_subset_order.size(); ++i) {
+        screen_subset_ordered[i] = screen_subset[screen_subset_order[i]];
+    }
+}
 
 template <class ValueType, class SafeBoolType=int8_t>
 struct GaussianCovBufferPack
@@ -28,7 +153,6 @@ struct GaussianCovBufferPack
     dyn_vec_value_t screen_grad_prev;
     dyn_vec_value_t screen_beta_prev; 
     dyn_vec_bool_t screen_is_active_prev;
-    dyn_vec_value_t screen_dual_prev; 
 
     vec_value_t buffer_p;
 };
@@ -74,19 +198,29 @@ bool early_exit(
 }
 
 template <class StateType, class StateGaussianPinType, class ValueType>
-ADELIE_CORE_STRONG_INLINE
-void update_solutions(
+inline void update_solutions(
     StateType& state,
     StateGaussianPinType& state_gaussian_pin_cov,
     ValueType lmda
 )
 {
+    using state_t = std::decay_t<StateType>;
+    using vec_index_t = typename state_t::vec_index_t;
+    using vec_value_t = typename state_t::vec_value_t;
+    using sp_vec_value_t = typename state_t::sp_vec_value_t;
+
     auto& betas = state.betas;
+    auto& duals = state.duals;
     auto& intercepts = state.intercepts;
     auto& devs = state.devs;
     auto& lmdas = state.lmdas;
 
+    vec_index_t dual_indices; 
+    vec_value_t dual_values;
+
     betas.emplace_back(std::move(state_gaussian_pin_cov.betas.back()));
+    sp_vec_value_t dual = sparsify_dual(state, dual_indices, dual_values);
+    duals.emplace_back(std::move(dual));
     intercepts.emplace_back(0);
     lmdas.emplace_back(lmda);
 
@@ -94,12 +228,13 @@ void update_solutions(
     devs.emplace_back(dev);
 }
 
-template <class StateType,
-          class BufferPackType,
-          class ValueType,
-          class CUIType=util::no_op>
-ADELIE_CORE_STRONG_INLINE
-auto fit(
+template <
+    class StateType,
+    class BufferPackType,
+    class ValueType,
+    class CUIType=util::no_op
+>
+inline auto fit(
     StateType& state,
     BufferPackType& buffer_pack,
     ValueType lmda,
@@ -135,7 +270,7 @@ auto fit(
     const auto& screen_subset_ordered = state.screen_subset_ordered;
     const auto& screen_vars = state.screen_vars;
     const auto& screen_transforms = state.screen_transforms;
-    const auto& screen_dual_begins = state.screen_dual_begins;
+    const auto constraint_buffer_size = state.constraint_buffer_size;
     const auto max_active_size = state.max_active_size;
     const auto max_iters = state.max_iters;
     const auto tol = state.tol;
@@ -147,14 +282,12 @@ auto fit(
     auto& screen_beta = state.screen_beta;
     auto& screen_grad = state.screen_grad;
     auto& screen_is_active = state.screen_is_active;
-    auto& screen_dual = state.screen_dual;
     auto& active_set_size = state.active_set_size;
     auto& active_set = state.active_set;
 
     auto& screen_grad_prev = buffer_pack.screen_grad_prev;
     auto& screen_beta_prev = buffer_pack.screen_beta_prev;
     auto& screen_is_active_prev = buffer_pack.screen_is_active_prev;
-    auto& screen_dual_prev = buffer_pack.screen_dual_prev;
 
     util::rowvec_type<value_t, 1> lmda_path;
     lmda_path = lmda;
@@ -166,13 +299,11 @@ auto fit(
         screen_grad_prev = screen_grad;
         screen_beta_prev = screen_beta;
         screen_is_active_prev = screen_is_active;
-        screen_dual_prev = screen_dual;
     };
     const auto load_prev_valid = [&]() {
         screen_grad.swap(screen_grad_prev);
         screen_beta.swap(screen_beta_prev);
         screen_is_active.swap(screen_is_active_prev);
-        screen_dual.swap(screen_dual_prev);
     };
 
     save_prev_valid();
@@ -188,10 +319,10 @@ auto fit(
         Eigen::Map<const vec_index_t>(screen_begins.data(), screen_begins.size()), 
         Eigen::Map<const vec_value_t>(screen_vars.data(), screen_vars.size()), 
         screen_transforms,
-        Eigen::Map<const vec_index_t>(screen_dual_begins.data(), screen_dual_begins.size()),
         Eigen::Map<const vec_index_t>(screen_subset_order.data(), screen_subset_order.size()),
         Eigen::Map<const vec_index_t>(screen_subset_ordered.data(), screen_subset_ordered.size()),
         lmda_path,
+        constraint_buffer_size,
         max_active_size, max_iters, 
         tol, 
         rdev_tol,
@@ -200,16 +331,12 @@ auto fit(
         Eigen::Map<vec_value_t>(screen_beta.data(), screen_beta.size()), 
         Eigen::Map<vec_value_t>(screen_grad.data(), screen_grad.size()), 
         Eigen::Map<vec_safe_bool_t>(screen_is_active.data(), screen_is_active.size()),
-        Eigen::Map<vec_value_t>(screen_dual.data(), screen_dual.size()),
         active_set_size,
         active_set
     );
 
     try {
-        pin::cov::solve(
-            state_gaussian_pin_cov, 
-            check_user_interrupt
-        );
+        state_gaussian_pin_cov.solve(check_user_interrupt);
     } catch(...) {
         load_prev_valid();
         throw;
@@ -234,10 +361,12 @@ auto fit(
     );
 }
 
-template <class StateType,
-          class PBType,
-          class ExitCondType,
-          class CUIType=util::no_op>
+template <
+    class StateType,
+    class PBType,
+    class ExitCondType,
+    class CUIType=util::no_op
+>
 inline void solve(
     StateType&& state,
     PBType&& pb,
@@ -282,7 +411,7 @@ inline void solve(
         A.mul(beta_indices, beta_values, grad);
         matrix::dvveq(grad, v - grad, n_threads);
 
-        state::update_abs_grad(state, lmda);
+        update_abs_grad(state, lmda);
     };
     const auto update_solutions_f = [](auto& state, auto& state_gaussian_pin_cov, auto lmda) {
         update_solutions(
@@ -301,7 +430,7 @@ inline void solve(
             kkt_passed,
             n_new_active
         );
-        state::gaussian::cov::update_screen_derived(state);
+        update_screen_derived(state);
     };
     const auto fit_f = [&](auto& state, auto lmda) {
         return fit(

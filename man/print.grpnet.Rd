@@ -21,7 +21,8 @@ Print a summary of the grpnet path at each step along the path.
 }
 \details{
 The call that produced the object \code{x} is printed, followed by a
-three-column matrix with columns \code{Df}, \verb{\%Dev} and \code{Lambda}.
+four-column matrix with columns \code{Groups}, \code{Df}, \verb{\%Dev} and \code{Lambda}.
+The \code{Groups} column is the number of active groups in the solution.
 The \code{Df} column is the number of nonzero coefficients (Df is a
 reasonable name only for lasso fits). \verb{\%Dev} is the percent deviance
 explained (relative to the null deviance).
@@ -30,7 +31,7 @@ explained (relative to the null deviance).
 
 x = matrix(rnorm(100 * 20), 100, 20)
 y = rnorm(100)
-fit1 = grpnet(x, glm.gaussian(y))
+fit1 = grpnet(x, glm.gaussian(y), groups = c(1:5,7,9))
 print(fit1)
 }
 \references{

@@ -190,8 +190,13 @@ void dmmeq(
     }
 }
 
-template <util::operator_type op=util::operator_type::_eq, 
-          class MType, class VType, class BuffType, class OutType>
+template <
+    util::operator_type op=util::operator_type::_eq, 
+    class MType, 
+    class VType, 
+    class BuffType, 
+    class OutType
+>
 ADELIE_CORE_STRONG_INLINE
 void dgemv(
     const MType& m,
@@ -262,6 +267,41 @@ void dgemv(
     }
 }
 
+template <
+    class MType,
+    class OutType
+>
+ADELIE_CORE_STRONG_INLINE
+void sq_norm(
+    const MType& m,
+    OutType& out,
+    size_t n_threads
+)
+{
+    using value_t = typename std::decay_t<MType>::Scalar;
+    const size_t n = m.rows();
+    const size_t p = m.cols();
+    const size_t n_bytes = sizeof(value_t) * n * (p + 1);
+    if (n_threads <= 1 || n_bytes <= Configs::min_bytes) { 
+        out = m.array().square().colwise().sum(); 
+        return;
+    }
+    const int n_blocks = std::min(n_threads, p);
+    const int block_size = p / n_blocks;
+    const int remainder = p % n_blocks;
+
+    #pragma omp parallel for schedule(static) num_threads(n_threads)
+    for (int t = 0; t < n_blocks; ++t)
+    {
+        const auto begin = (
+            std::min<int>(t, remainder) * (block_size + 1) 
+            + std::max<int>(t-remainder, 0) * block_size
+        );
+        const auto size = block_size + (t < remainder);
+        out.segment(begin, size) = m.middleCols(begin, size).array().square().colwise().sum();
+    }
+}
+
 template <class InnerType, class ValueType, class WeightsType>
 ADELIE_CORE_STRONG_INLINE
 auto svsvwdot(
@@ -298,8 +338,12 @@ auto svsvwdot(
     return sum;
 }
 
-template <class Inner1Type, class Value1Type,
-          class Inner2Type, class Value2Type>
+template <
+    class Inner1Type, 
+    class Value1Type,
+    class Inner2Type, 
+    class Value2Type
+>
 ADELIE_CORE_STRONG_INLINE
 auto svsvdot(
     const Inner1Type& inner_1,
@@ -411,6 +455,46 @@ void spaxi(
         const auto size = block_size + (t < remainder);
         for (int i = begin; i < begin+size; ++i) {
             out[inner[i]] += v * value[i];
+        }
+    }
+}
+
+template <class InnerType, class ValueType, class DenseType, class OutType>
+ADELIE_CORE_STRONG_INLINE
+void spdaddi(
+    const InnerType& inner, 
+    const ValueType& value,
+    const DenseType& v,
+    OutType& out,
+    size_t n_threads
+)
+{
+    using value_t = typename std::decay_t<ValueType>::Scalar;
+    const size_t nnz = inner.size();
+    // NOTE: multiplier from experimentation
+    const size_t n_bytes = (8 * sizeof(value_t)) * nnz;
+    if (n_threads <= 1 || n_bytes <= Configs::min_bytes) {
+        for (size_t i = 0; i < nnz; ++i) {
+            const auto idx = inner[i];
+            out[idx] += v[idx] * value[i];
+        }
+        return;
+    }
+    const int n_blocks = std::min(n_threads, nnz);
+    const int block_size = nnz / n_blocks;
+    const int remainder = nnz % n_blocks;
+
+    #pragma omp parallel for schedule(static) num_threads(n_threads)
+    for (int t = 0; t < n_blocks; ++t)
+    {
+        const auto begin = (
+            std::min<int>(t, remainder) * (block_size + 1) 
+            + std::max<int>(t-remainder, 0) * block_size
+        );
+        const auto size = block_size + (t < remainder);
+        for (int i = begin; i < begin+size; ++i) {
+            const auto idx = inner[i];
+            out[idx] += v[idx] * value[i];
         }
     }
 }
@@ -603,6 +687,51 @@ auto snp_phased_ancestry_dot(
         }
     }
     return vbuff.sum();
+}
+
+template <class IOType, class VType>
+auto snp_phased_ancestry_cross_dot(
+    const IOType& io,
+    int j0, 
+    int j1, 
+    const VType& v
+)
+{
+    using value_t = typename std::decay_t<VType>::Scalar;
+
+    const auto A = io.ancestries();
+    const auto snp0 = j0 / A;
+    const auto a0 = j0 - A * snp0;
+    const auto snp1 = j1 / A;
+    const auto a1 = j1 - A * snp1;
+
+    auto it0 = io.begin(snp0, a0, 0);
+    const auto end0 = io.end(snp0, a0, 0);
+    auto it1 = io.begin(snp1, a1, 1);
+    const auto end1 = io.end(snp1, a1, 1);
+
+    value_t sum = 0;
+    while (
+        (it0 != end0) &&
+        (it1 != end1)
+    ) {
+        const auto idx0 = *it0;
+        const auto idx1 = *it1;
+        if (idx0 < idx1) {
+            ++it0; 
+            continue;
+        }
+        else if (idx0 > idx1) {
+            ++it1;
+            continue;
+        } 
+        else {
+            sum += v[idx0];
+            ++it0;
+            ++it1;
+        }
+    }
+    return sum;
 }
 
 template <class IOType, class ValueType, class OutType>

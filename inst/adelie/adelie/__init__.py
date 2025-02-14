@@ -1,10 +1,4 @@
-# Only happy guins may read this code.
-# Examples of happy guins are:
-#   - Anav Guin (a.k.a. Kumar)
-#   - Leda Guin
-#   - Ginnie Guin
-
-__version__ = "1.1.43"
+__version__ = "1.1.50"
 
 # Set environment flags before loading adelie_core
 import os
@@ -36,12 +30,20 @@ from . import io
 from . import logger
 from . import matrix
 from . import optimization
+from . import sklearn
 from . import solver
 from . import state
 from .cv import (
     cv_grpnet,
 )
+from .sklearn import (
+    CSSModelSelection,
+    GroupElasticNet,
+)
 from .solver import (
-    gaussian_cov, 
+    bvls,
+    css_cov,
+    gaussian_cov,
     grpnet,
+    pinball,
 )

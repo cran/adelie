@@ -1,7 +1,8 @@
 #pragma once
-#include <adelie_core/util/types.hpp>
-#include <adelie_core/util/macros.hpp>
+#include <adelie_core/configs.hpp>
 #include <adelie_core/bcd/unconstrained/newton.hpp>
+#include <adelie_core/util/macros.hpp>
+#include <adelie_core/util/types.hpp>
 
 namespace adelie_core {
 namespace solver {
@@ -22,6 +23,7 @@ struct GaussianPinBufferPack
     util::rowvec_type<value_t> buffer2;
     util::rowvec_type<value_t> buffer3;
     util::rowvec_type<value_t> buffer4;
+    util::rowvec_type<uint64_t> constraint_buffer;
 
     std::vector<index_t> active_beta_indices;
     std::vector<value_t> active_beta_ordered;
@@ -31,12 +33,14 @@ struct GaussianPinBufferPack
         size_t buffer2_size,
         size_t buffer3_size,
         size_t buffer4_size,
+        size_t constraint_buffer_size,
         size_t active_beta_size
     ): 
         buffer1(buffer1_size),
         buffer2(buffer2_size),
         buffer3(buffer3_size),
-        buffer4(buffer4_size)
+        buffer4(buffer4_size),
+        constraint_buffer(constraint_buffer_size)
     {
         // allocate buffers for optimization
         active_beta_indices.reserve(active_beta_size);
@@ -52,8 +56,7 @@ struct GaussianPinBufferPack
  * @param   values      corresponding active values to indices.
  */
 template <class StateType, class VecIndexType, class VecValueType>
-ADELIE_CORE_STRONG_INLINE
-void sparsify_active_beta(
+inline void sparsify_active_beta(
     const StateType& state,
     VecIndexType& indices,
     VecValueType& values
@@ -86,7 +89,7 @@ void sparsify_active_beta(
             group_size, groups[group], groups[group] + group_size - 1
         );
         vals_seg = screen_beta.segment(screen_begins[ss_idx], group_size);
-        if (constraint) constraint->project(vals_seg);
+        if (Configs::project && constraint) constraint->project(vals_seg);
         idxs_begin += group_size;
         vals_begin += group_size;
     }        
@@ -142,8 +145,13 @@ void update_rsq(
     rsq += del * (2 * grad - del * x_var);
 }
 
-template <class LType, class VType, class ValueType, 
-          class XType, class BufferType>
+template <
+    class LType, 
+    class VType, 
+    class ValueType, 
+    class XType, 
+    class BufferType
+>
 ADELIE_CORE_STRONG_INLINE
 void update_coordinate(
     XType& x,
@@ -158,13 +166,13 @@ void update_coordinate(
 )
 {
     size_t iters;
-    bcd::unconstrained::newton_abs_solver(
+    bcd::unconstrained::newton_solver(
         L, v, l1, l2, tol, max_iters,
         x, iters, buffer1, buffer2
     );
     if (iters >= max_iters) {
         throw util::adelie_core_solver_error(
-            "Newton-ABS max iteration reached! "
+            "Newton-ABS max iterations reached! "
             "Try increasing newton_max_iters."
         );
     }

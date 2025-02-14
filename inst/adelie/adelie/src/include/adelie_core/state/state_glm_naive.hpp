@@ -1,83 +1,52 @@
 #pragma once
+#include <adelie_core/glm/glm_base.hpp>
 #include <adelie_core/state/state_base.hpp>
-#include <adelie_core/state/state_gaussian_naive.hpp>
+#include <adelie_core/util/functional.hpp>
+#include <adelie_core/util/tqdm.hpp>
+
+#ifndef ADELIE_CORE_STATE_GLM_NAIVE_TP
+#define ADELIE_CORE_STATE_GLM_NAIVE_TP \
+    template <\
+        class ConstraintType,\
+        class MatrixType,\
+        class ValueType,\
+        class IndexType,\
+        class BoolType,\
+        class SafeBoolType\
+    >
+#endif
+#ifndef ADELIE_CORE_STATE_GLM_NAIVE
+#define ADELIE_CORE_STATE_GLM_NAIVE \
+    StateGlmNaive<\
+        ConstraintType,\
+        MatrixType,\
+        ValueType,\
+        IndexType,\
+        BoolType,\
+        SafeBoolType\
+    >
+#endif
 
 namespace adelie_core {
 namespace state {
-namespace glm {
-namespace naive {
 
-/**
- * Unlike the similar function in gaussian::naive,
- * this does not call the base version to update the base classes's screen derived quantities.
- * This is because in GLM fitting, the three screen_* inputs are modified at every IRLS loop,
- * while the base quantities remain the same. 
- * It is only when IRLS finishes and we must screen for variables where we have to update the base quantities.
- * In gaussian naive setting, the IRLS has loop size of 1 essentially, so the two versions are synonymous.
- */
-template <class StateType, class XMType, class WType,
-          class SXMType, class STType, class SVType>
-void update_screen_derived(
-    StateType& state,
-    const XMType& X_means,
-    const WType& weights_sqrt,
-    size_t begin,
-    size_t size,
-    SXMType& screen_X_means,
-    STType& screen_transforms,
-    SVType& screen_vars
-)
+template <
+    class ConstraintType,
+    class MatrixType, 
+    class ValueType=typename std::decay_t<MatrixType>::value_t,
+    class IndexType=Eigen::Index,
+    class BoolType=bool,
+    class SafeBoolType=int8_t
+>
+class StateGlmNaive: public StateBase<
+    ConstraintType,
+    ValueType,
+    IndexType,
+    BoolType,
+    SafeBoolType
+>
 {
-    const auto& group_sizes = state.group_sizes;
-    const auto& screen_set = state.screen_set;
-    const auto& screen_begins = state.screen_begins;
-
-    const auto new_screen_size = screen_set.size();
-    const int new_screen_value_size = (
-        (screen_begins.size() == 0) ? 0 : (
-            screen_begins.back() + group_sizes[screen_set.back()]
-        )
-    );
-
-    screen_X_means.resize(new_screen_value_size);    
-    screen_transforms.resize(new_screen_size);
-    screen_vars.resize(new_screen_value_size, 0);
-
-    gaussian::naive::update_screen_derived(
-        *state.X,
-        X_means,
-        weights_sqrt,
-        state.groups,
-        state.group_sizes,
-        state.screen_set,
-        state.screen_begins,
-        begin,
-        size,
-        state.intercept,
-        screen_X_means,
-        screen_transforms,
-        screen_vars
-    );
-}
-
-} // namespace naive
-} // namespace glm
-
-template <class ConstraintType,
-          class MatrixType, 
-          class ValueType=typename std::decay_t<MatrixType>::value_t,
-          class IndexType=Eigen::Index,
-          class BoolType=bool,
-          class SafeBoolType=int8_t
-        >
-struct StateGlmNaive: StateBase<
-        ConstraintType,
-        ValueType,
-        IndexType,
-        BoolType,
-        SafeBoolType
-    >
-{
+public:
     using base_t = StateBase<
         ConstraintType,
         ValueType,
@@ -92,6 +61,7 @@ struct StateGlmNaive: StateBase<
     using typename base_t::map_cvec_value_t;
     using typename base_t::dyn_vec_constraint_t;
     using matrix_t = MatrixType;
+    using glm_t = glm::GlmBase<value_t>;
 
     /* static states */
     const value_t loss_full;
@@ -113,6 +83,10 @@ struct StateGlmNaive: StateBase<
     vec_value_t eta;
     vec_value_t resid;
 
+private:
+    void initialize();
+
+public:
     explicit StateGlmNaive(
         matrix_t& X,
         const Eigen::Ref<const vec_value_t>& eta,
@@ -120,6 +94,7 @@ struct StateGlmNaive: StateBase<
         const dyn_vec_constraint_t& constraints,
         const Eigen::Ref<const vec_index_t>& groups, 
         const Eigen::Ref<const vec_index_t>& group_sizes,
+        const Eigen::Ref<const vec_index_t>& dual_groups, 
         value_t alpha, 
         const Eigen::Ref<const vec_value_t>& penalty,
         const Eigen::Ref<const vec_value_t>& offsets,
@@ -152,7 +127,6 @@ struct StateGlmNaive: StateBase<
         const Eigen::Ref<const vec_index_t>& screen_set,
         const Eigen::Ref<const vec_value_t>& screen_beta,
         const Eigen::Ref<const vec_bool_t>& screen_is_active,
-        const Eigen::Ref<const vec_value_t>& screen_dual,
         size_t active_set_size,
         const Eigen::Ref<const vec_index_t>& active_set,
         value_t beta0,
@@ -160,12 +134,12 @@ struct StateGlmNaive: StateBase<
         const Eigen::Ref<const vec_value_t>& grad
     ):
         base_t(
-            constraints, groups, group_sizes, alpha, penalty, lmda_path, lmda_max, min_ratio, lmda_path_size,
+            constraints, groups, group_sizes, dual_groups, alpha, penalty, lmda_path, lmda_max, min_ratio, lmda_path_size,
             max_screen_size, max_active_size,
             pivot_subset_ratio, pivot_subset_min, pivot_slack_ratio, screen_rule, 
             max_iters, tol, adev_tol, ddev_tol, newton_tol, newton_max_iters, early_exit, 
             setup_lmda_max, setup_lmda_path, intercept, n_threads,
-            screen_set, screen_beta, screen_is_active, screen_dual, active_set_size, active_set, lmda, grad
+            screen_set, screen_beta, screen_is_active, active_set_size, active_set, lmda, grad
         ),
         loss_full(loss_full),
         offsets(offsets.data(), offsets.size()),
@@ -178,16 +152,15 @@ struct StateGlmNaive: StateBase<
         eta(eta),
         resid(resid)
     {
-        if (offsets.size() != eta.size()) {
-            throw util::adelie_core_error("offsets must have the same length as eta.");
-        }
-        if (offsets.size() != resid.size()) {
-            throw util::adelie_core_error("offsets must have the same length as resid.");
-        }
-        if (irls_tol <= 0) {
-            throw util::adelie_core_error("irls_tol must be > 0.");
-        }
+        initialize();
     }
+
+    void solve(
+        glm_t& glm,
+        util::tq::progress_bar_t& pb,
+        std::function<bool()> exit_cond,
+        std::function<void()> check_user_interrupt =util::no_op()
+    );
 };
 
 } // namespace state

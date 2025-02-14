@@ -1,6 +1,5 @@
 #pragma once
 #include <adelie_core/configs.hpp>
-#include <adelie_core/matrix/utils.hpp>
 #include <adelie_core/solver/solver_glm_naive.hpp>
 
 namespace adelie_core {
@@ -30,15 +29,13 @@ struct GlmWrap
     glm_t& glm;
     const map_carr_value_t y;
     const map_cvec_value_t weights;
-    const bool is_symmetric;
 
     explicit GlmWrap(
         glm_t& glm
     ):
         glm(glm),
         y(glm.y.data(), glm.y.rows(), glm.y.cols()),
-        weights(glm.weights.data(), glm.weights.size()),
-        is_symmetric(glm.is_symmetric)
+        weights(glm.weights.data(), glm.weights.size())
     {}
 
     void gradient(
@@ -192,11 +189,13 @@ void update_loss_null(
     }
 }
 
-template <class StateType,
-          class GlmType,
-          class PBType,
-          class ExitCondType,
-          class CUIType=util::no_op>
+template <
+    class StateType,
+    class GlmType,
+    class PBType,
+    class ExitCondType,
+    class CUIType=util::no_op
+>
 inline void solve(
     StateType&& state,
     GlmType&& glm,

@@ -1,13 +1,11 @@
 #pragma once
 #include <numeric>
 #include <adelie_core/configs.hpp>
+#include <adelie_core/solver/solver_gaussian_pin_base.hpp>
 #include <adelie_core/util/counting_iterator.hpp>
 #include <adelie_core/util/exceptions.hpp>
 #include <adelie_core/util/functional.hpp>
 #include <adelie_core/util/stopwatch.hpp>
-#include <adelie_core/util/eigen/map_sparsevector.hpp>
-#include <adelie_core/solver/solver_gaussian_pin_base.hpp>
-#include <adelie_core/matrix/utils.hpp>
 
 namespace adelie_core {
 namespace solver {
@@ -15,11 +13,15 @@ namespace gaussian {
 namespace pin {
 namespace naive {
 
-template <class StateType, class Iter,
-          class ValueType, class BufferPackType,
-          class UpdateCoefficientG0Type,
-          class UpdateCoefficientG1Type,
-          class AdditionalStepType=util::no_op>
+template <
+    class StateType, 
+    class Iter,
+    class ValueType, 
+    class BufferPackType,
+    class UpdateCoefficientG0Type,
+    class UpdateCoefficientG1Type,
+    class AdditionalStepType=util::no_op
+>
 ADELIE_CORE_STRONG_INLINE
 void coordinate_descent(
     StateType&& state,
@@ -33,6 +35,9 @@ void coordinate_descent(
     AdditionalStepType additional_step=AdditionalStepType()
 )
 {
+    using state_t = std::decay_t<StateType>;
+    using vec_value_t = typename state_t::vec_value_t;
+
     auto& X = *state.X;
     const auto& penalty = state.penalty;
     const auto& weights = state.weights;
@@ -55,6 +60,7 @@ void coordinate_descent(
     auto& buffer1 = buffer_pack.buffer1;
     auto& buffer3 = buffer_pack.buffer3;
     auto& buffer4 = buffer_pack.buffer4;
+    auto& constraint_buffer = buffer_pack.constraint_buffer;
 
     const auto l1 = lmda * alpha;
     const auto l2 = lmda * (1-alpha);
@@ -83,7 +89,7 @@ void coordinate_descent(
             );
 
             update_coordinate_g0_f(
-                ss_idx, ak, A_kk, gk, l1 * pk, l2 * pk, 1
+                ss_idx, ak, A_kk, gk, l1 * pk, l2 * pk, 1, constraint_buffer
             );
 
             gk -= ak_old * A_kk;
@@ -125,11 +131,15 @@ void coordinate_descent(
             auto ak_old_transformed = buffer4.segment(ak.size(), ak.size());
             ak_old_transformed.matrix() = ak_old.matrix() * Vk; 
             auto ak_transformed = buffer4.segment(2 * ak.size(), ak.size());
+            Eigen::Map<vec_value_t>(
+                ak_transformed.data(),
+                ak_transformed.size()
+             ) = ak_old_transformed;
 
             // update group coefficients
             gk_transformed += A_kk * ak_old_transformed; 
             update_coordinate_g1_f(
-                ss_idx, ak_transformed, A_kk, gk_transformed, l1 * pk, l2 * pk, Vk
+                ss_idx, ak_transformed, A_kk, gk_transformed, l1 * pk, l2 * pk, Vk, constraint_buffer
             );
             gk_transformed -= A_kk * ak_old_transformed; 
             
@@ -160,11 +170,13 @@ void coordinate_descent(
 /**
  * Applies multiple blockwise coordinate descent on the active set.
  */
-template <class StateType, 
-          class BufferPackType, 
-          class UpdateCoefficientG0Type,
-          class UpdateCoefficientG1Type,
-          class CUIType>
+template <
+    class StateType, 
+    class BufferPackType, 
+    class UpdateCoefficientG0Type,
+    class UpdateCoefficientG1Type,
+    class CUIType
+>
 ADELIE_CORE_STRONG_INLINE
 void solve_active(
     StateType&& state,
@@ -202,10 +214,12 @@ void solve_active(
     }
 }
 
-template <class StateType,
-          class UpdateCoefficientG0Type,
-          class UpdateCoefficientG1Type,
-          class CUIType = util::no_op>
+template <
+    class StateType,
+    class UpdateCoefficientG0Type,
+    class UpdateCoefficientG1Type,
+    class CUIType = util::no_op
+>
 inline void solve(
     StateType&& state,
     UpdateCoefficientG0Type update_coordinate_g0_f,
@@ -229,6 +243,7 @@ inline void solve(
     const auto& lmda_path = state.lmda_path;
     const auto& rsq = state.rsq;
     const auto& resid_sum = state.resid_sum;
+    const auto constraint_buffer_size = state.constraint_buffer_size;
     const auto intercept = state.intercept;
     const auto tol = state.tol;
     const auto max_active_size = state.max_active_size;
@@ -259,8 +274,10 @@ inline void solve(
         max_group_size, 
         max_group_size, 
         std::max<size_t>(3 * max_group_size, n),
+        constraint_buffer_size,
         screen_beta.size()
     );
+
     // buffer to store final result
     auto& active_beta_indices = buffer_pack.active_beta_indices; 
     auto& active_beta_ordered = buffer_pack.active_beta_ordered;
@@ -362,6 +379,7 @@ inline void solve(
             active_beta_indices,
             active_beta_ordered
         );
+
         Eigen::Map<const sp_vec_value_t> beta_map(
             p,
             active_beta_indices.size(),
@@ -369,7 +387,8 @@ inline void solve(
             active_beta_ordered.data()
         );
 
-        betas.emplace_back(beta_map);
+        sp_vec_value_t beta = beta_map;
+        betas.emplace_back(std::move(beta));
         intercepts.emplace_back(intercept * (y_mean + resid_sum));
         rsqs.emplace_back(rsq);
         lmdas.emplace_back(lmda_path[l]);
@@ -381,8 +400,7 @@ inline void solve(
     }
 }
 
-template <class StateType,
-          class CUIType = util::no_op>
+template <class StateType, class CUIType = util::no_op>
 inline void solve(
     StateType&& state,
     CUIType check_user_interrupt = CUIType()
@@ -395,14 +413,12 @@ inline void solve(
     const auto& constraints = *state.constraints;
     const auto& group_sizes = state.group_sizes;
     const auto& screen_set = state.screen_set;
-    const auto& screen_dual_begins = state.screen_dual_begins;
-    auto& screen_dual = state.screen_dual;
 
     const auto max_group_size = group_sizes.maxCoeff();
     vec_value_t buff(max_group_size * 2);
 
     const auto update_coordinate_g0_f = [&](
-        auto ss_idx, value_t& ak, value_t A_kk, value_t gk, value_t l1, value_t l2, value_t Q
+        auto ss_idx, value_t& ak, value_t A_kk, value_t gk, value_t l1, value_t l2, value_t Q, auto& buffer
     ) {
         const auto k = screen_set[ss_idx];
         const auto constraint = constraints[k];
@@ -413,18 +429,15 @@ inline void solve(
 
         // constrained case
         } else {
-            const auto sdb = screen_dual_begins[ss_idx];
-            const auto ds = constraint->duals(); 
-            auto mu = screen_dual.segment(sdb, ds);
             Eigen::Map<util::rowvec_type<value_t, 1>> ak_view(&ak);
             const Eigen::Map<const util::rowvec_type<value_t, 1>> A_kk_view(&A_kk);
             const Eigen::Map<const util::rowvec_type<value_t, 1>> gk_view(&gk);
             const Eigen::Map<const util::colmat_type<value_t, 1, 1>> Q_view(&Q);
-            constraint->solve(ak_view, mu, A_kk_view, gk_view, l1, l2, Q_view);
+            constraint->solve(ak_view, A_kk_view, gk_view, l1, l2, Q_view, buffer);
         }
     };
     const auto update_coordinate_g1_f = [&](
-        auto ss_idx, auto& ak, const auto& A_kk, const auto& gk, auto l1, auto l2, const auto& Q
+        auto ss_idx, auto& ak, const auto& A_kk, const auto& gk, auto l1, auto l2, const auto& Q, auto& buffer
     ) {
         const auto k = screen_set[ss_idx];
         const auto constraint = constraints[k];
@@ -442,10 +455,7 @@ inline void solve(
 
         // constrained case
         } else {
-            const auto sdb = screen_dual_begins[ss_idx];
-            const auto ds = constraint->duals(); 
-            auto mu = screen_dual.segment(sdb, ds);
-            constraint->solve(ak, mu, A_kk, gk, l1, l2, Q);
+            constraint->solve(ak, A_kk, gk, l1, l2, Q, buffer);
         }
     };
 

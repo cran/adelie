@@ -9,8 +9,9 @@
   object,
   newx,
   lambda = NULL,
-  type = c("link", "response", "coefficients"),
+  type = c("link", "response", "coefficients", "nonzero"),
   newoffsets = NULL,
+  n_threads = 1,
   ...
 )
 
@@ -29,15 +30,18 @@ centers and scaling will be applied to this matrix. This argument is not used fo
 predictions are required. Default is the entire sequence used to create the
 model. If values of \code{lambda} are supplied, the function uses linear
 interpolation to make predictions for values of \code{lambda} that do
-not coincide with those used in the fitting algorithm.}
+not coincide with those used in the fitting algorithm. Note: if newx is a vector
+(a single row which has lost its matrix dimensions), convert it to a 1-row matrix first, e.g. by supplying t(newx) instead.}
 
 \item{type}{Type of prediction required. Type \code{"link"} is  the default, and gives the linear
 predictors. Type \code{"response"} applies the inverse link to these predictions.
-Type \code{"coefficients"} extracts the coefficients, intercepts and the active-set sizes.}
+Type \code{"coefficients"} extracts the coefficients, intercepts and the active-set sizes.
+Type \code{"nonzero"} returns a list of active groups along the path, indexed from 1 to number of groups.}
 
 \item{newoffsets}{If an offset is used in the fit, then one must be supplied
-for making predictions (except for \code{type="coefficients"} or
-\code{type="nonzero"})}
+for making predictions (except for \code{type="coefficients"}.}
+
+\item{n_threads}{Number of threads, default \code{1}.}
 
 \item{\dots}{Currently ignored.}
 }
@@ -46,11 +50,12 @@ The object returned depends on type.
 }
 \description{
 Similar to other predict methods, this functions predicts linear predictors,
-coefficients and more from a fitted \code{"grpnet"} object.
+coefficients and more from a fitted \code{"grpnet"} object. Note that if the default \code{standardize=TRUEE} was used in fitting the \code{grpnet} object, the coefficients reported are for the standardized inputs.
+However, the \code{predict} function will apply the stored standardization to \code{newx} and give the correct predictions.
 }
 \details{
 The shape of the objects returned are different for \code{"multinomial"} and \code{"multigaussian"}
-objects
+objects.
 \code{coef(...)} is equivalent to \code{predict(type="coefficients",...)}
 }
 \examples{
@@ -59,9 +64,12 @@ n <- 100
 p <- 200
 X <- matrix(rnorm(n * p), n, p)
 y <- X[,1] * rnorm(1) + rnorm(n)
-fit <- grpnet(X, glm.gaussian(y))
+groups <- c(1, sample(2:199, 60, replace = FALSE))
+groups <- sort(groups)
+fit <- grpnet(X, glm.gaussian(y), groups = groups)
 coef(fit)
-predict(fit,newx = X[1:5,])
+predict(fit,newx = X[1:5,], lambda = c(0.1, 0.05))
+predict(fit, type="nonzero", lambda = c(0.1, 0.05))
 }
 \references{
 Yang, James and Hastie, Trevor. (2024) A Fast and Scalable Pathwise-Solver for Group Lasso
