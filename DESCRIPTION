@@ -1,7 +1,7 @@
 Package: adelie
 Title: Group Lasso and Elastic Net Solver for Generalized Linear Models
-Version: 1.0.6
-Date: 2025-02-13
+Version: 1.0.7
+Date: 2025-02-27
 Authors@R: c(
     person("James", "Yang", , "jamesyang916@gmail.com", role = c("aut", "cph")),
     person("Trevor", "Hastie", , "hastie@stanford.edu", role = c("aut", "cph", "cre")),
@@ -23,10 +23,10 @@ VignetteBuilder: knitr
 URL: https://github.com/JamesYang007/adelie-r
 BugReports: https://github.com/JamesYang007/adelie-r/issues
 NeedsCompilation: yes
-Packaged: 2025-02-14 02:30:45 UTC; hastie
+Packaged: 2025-02-27 15:23:01 UTC; hastie
 Author: James Yang [aut, cph],
   Trevor Hastie [aut, cph, cre],
   Balasubramanian Narasimhan [aut]
 Maintainer: Trevor Hastie <hastie@stanford.edu>
 Repository: CRAN
-Date/Publication: 2025-02-14 06:20:01 UTC
+Date/Publication: 2025-02-28 17:50:02 UTC

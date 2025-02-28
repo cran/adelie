@@ -134,6 +134,35 @@ par(mfrow = c(1,2))
 plot(fitcv)
 plot(fitcv$grpnet.fit)
 
+## -----------------------------------------------------------------------------
+n <- 100
+p <- 30
+set.seed(1)
+X <- matrix(rnorm(n * p), n, p)
+y <- X[,c(1:5)] %*% rnorm(5)/3 + rnorm(n)
+
+fit <- grpnet(X, glm.gaussian(y))
+constrs = lapply(1:p, function(i) constraint.box(lower = 0, upper = Inf))
+fit.constr = grpnet(X, glm.gaussian(y), constraints = constrs)
+par(mfrow=c(1,2))
+plot(fit)
+plot(fit.constr)
+
+## -----------------------------------------------------------------------------
+fit <- grpnet(X, glm.gaussian(y), groups=c(1,5:30))
+beta <- coef(fit)$beta[100, 1:4]
+print(beta)
+lower = lower=c(-Inf,-Inf,-Inf,-.2)
+upper=c(0.2,0.05,0.4,Inf)
+constrs = rep(list(NULL),27) # there are 27 groups
+constrs[[1]] = constraint.box(lower=lower,upper=upper)
+fit.constr = grpnet(X, glm.gaussian(y), groups=c(1,5:30), constraints = constrs)
+par(mfrow=c(1,2))
+plot(fit)
+plot(fit.constr)
+abline(h=lower,col="blue",lty=2)
+abline(h=upper,col="blue",lty=2)
+
 ## ----dense--------------------------------------------------------------------
 n = 4
 p = 2
