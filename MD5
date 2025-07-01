@@ -1,4 +1,4 @@
-937a57b84e15b6292dfd397510ceb3c6 *DESCRIPTION
+31852cf6c9ca3fd50b6d19b7f4a0a3c1 *DESCRIPTION
 e4638bc3bd58615894b80f683a634d65 *LICENSE
 a72589e5b8423474371d54cdcb5f7914 *NAMESPACE
 f40ec3127c3909806d36d97425436323 *NEWS.md
@@ -10,12 +10,12 @@ ab63341d28713296d0c194c194e424aa *R/glm.R
 f93b1d35b66c67bf2964b702fc307488 *R/io.R
 74e51f27047c054558f5a02227d6658a *R/matrix.R
 a641ff6e3791cd506d7fc6e1c81e3d89 *R/onAttach.R
-1ea17b672ce29221909dfe3a2b019454 *R/solver.R
+34aabde3d4d921979feb0a2e93baa416 *R/solver.R
 391d7cf11f453028665426b38ffa85f0 *R/state.R
-301f93f8e3c8a841d0a5ebc0066b1a27 *R/utilities.R
+f4e93e6f4f2d1ac1676117328ff2564b *R/utilities.R
 e37a142a9268df2ac9f856417a3e14e9 *R/wrappers.R
-76161b65639451c966be75488458b3c3 *build/partial.rdb
-6932bcf4f3709a3eb65edc14978874c6 *build/vignette.rds
+1bf18d9c216b8d95033f0bd2fe2906b2 *build/partial.rdb
+acd2bcd90c1c4d6a939bf5d8daf44135 *build/vignette.rds
 5da61dc3fd1934c1baa967ceca30280f *inst/adelie/adelie/__init__.py
 a602c297f161c9ebc553bb819095179f *inst/adelie/adelie/bcd.py
 251b3c75c0e75616605fed13c5ee3907 *inst/adelie/adelie/configs.py
@@ -244,7 +244,7 @@ a67f5a40fd05d917e06223d8d3dcc83f *inst/adelie/adelie/src/src/tools/types.hpp
 e92cf2d6d1d0d6ec67d1716fb4d817ef *inst/adelie/adelie/state.py
 afdd1b228a38024dfde3d422ce24ffd6 *inst/doc/adelie.R
 9994a1825e8bf4b8512a1e737f1d77ac *inst/doc/adelie.Rmd
-fb138787131c9bf22cd369e4cc530834 *inst/doc/adelie.html
+87b8f5a708914d2bd69179ac34d8d2ed *inst/doc/adelie.html
 690c4beb1560f20c991db99e30c9d68a *man/constraint.box.Rd
 ad014dcd94e310f4202ac5ba2f80b2b8 *man/cv.glintnet.Rd
 a1b4d4c943c7e7f636722ed9c7f46d99 *man/cv.grpnet.Rd

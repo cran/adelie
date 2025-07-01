@@ -1,11 +1,11 @@
 Package: adelie
 Title: Group Lasso and Elastic Net Solver for Generalized Linear Models
-Version: 1.0.7
-Date: 2025-02-27
+Version: 1.0.8
+Date: 2025-06-28
 Authors@R: c(
-    person("James", "Yang", , "jamesyang916@gmail.com", role = c("aut", "cph")),
-    person("Trevor", "Hastie", , "hastie@stanford.edu", role = c("aut", "cph", "cre")),
-    person("Balasubramanian", "Narasimhan", , "naras@stanford.edu", role = c("aut")))
+    person("James", "Yang", role = c("aut", "cph")),
+    person("Trevor", "Hastie", email="hastie@stanford.edu", role = c("aut", "cph", "cre")),
+    person("Balasubramanian", "Narasimhan", role = c("aut")))
 Description: Extremely efficient procedures for fitting the entire group lasso and group elastic net regularization path for GLMs, multinomial, the Cox model and multi-task Gaussian models. Similar to the R package 'glmnet' in scope of models, and in computational speed.  This package provides  R bindings to the C++ code underlying the corresponding Python package 'adelie'. These bindings offer a general purpose group elastic net solver, 
     a wide range of matrix classes that can exploit special structure 
     to allow large-scale inputs, and an assortment of 
@@ -23,10 +23,10 @@ VignetteBuilder: knitr
 URL: https://github.com/JamesYang007/adelie-r
 BugReports: https://github.com/JamesYang007/adelie-r/issues
 NeedsCompilation: yes
-Packaged: 2025-02-27 15:23:01 UTC; hastie
+Packaged: 2025-06-30 21:14:52 UTC; naras
 Author: James Yang [aut, cph],
   Trevor Hastie [aut, cph, cre],
   Balasubramanian Narasimhan [aut]
 Maintainer: Trevor Hastie <hastie@stanford.edu>
 Repository: CRAN
-Date/Publication: 2025-02-28 17:50:02 UTC
+Date/Publication: 2025-07-01 17:50:06 UTC
