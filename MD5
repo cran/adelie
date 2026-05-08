@@ -1,7 +1,7 @@
-31852cf6c9ca3fd50b6d19b7f4a0a3c1 *DESCRIPTION
+c2fee56b124640369041bb47ad1a09bb *DESCRIPTION
 e4638bc3bd58615894b80f683a634d65 *LICENSE
 a72589e5b8423474371d54cdcb5f7914 *NAMESPACE
-f40ec3127c3909806d36d97425436323 *NEWS.md
+099187bc5978d9420a75ea5c6521e670 *NEWS.md
 ef114c14ceaf35077ae0ebf6f2150b77 *R/adelie-package.R
 9e9d113e027b0fa0b4c87511361e39ce *R/configs.R
 3c5cd69e9a36e39696bc8474abc1d0f5 *R/constraints.R
@@ -10,13 +10,13 @@ ab63341d28713296d0c194c194e424aa *R/glm.R
 f93b1d35b66c67bf2964b702fc307488 *R/io.R
 74e51f27047c054558f5a02227d6658a *R/matrix.R
 a641ff6e3791cd506d7fc6e1c81e3d89 *R/onAttach.R
-34aabde3d4d921979feb0a2e93baa416 *R/solver.R
-391d7cf11f453028665426b38ffa85f0 *R/state.R
-f4e93e6f4f2d1ac1676117328ff2564b *R/utilities.R
-e37a142a9268df2ac9f856417a3e14e9 *R/wrappers.R
-1bf18d9c216b8d95033f0bd2fe2906b2 *build/partial.rdb
-acd2bcd90c1c4d6a939bf5d8daf44135 *build/vignette.rds
-5da61dc3fd1934c1baa967ceca30280f *inst/adelie/adelie/__init__.py
+5f50c380a5baf142c08f26467e34e4a7 *R/solver.R
+aa0410a357410388f7320c5634e30094 *R/state.R
+ffdee22ce63355fbb3f265d3fd93acdb *R/utilities.R
+34457f2e2d7eb52b86026a464a679297 *R/wrappers.R
+76e123f5dcc8dee07678412adc0a2a84 *build/partial.rdb
+fa754b68445341649277df2b4a7ae2b1 *build/vignette.rds
+b7c288869ee4150d650f9faad6e56469 *inst/adelie/adelie/__init__.py
 a602c297f161c9ebc553bb819095179f *inst/adelie/adelie/bcd.py
 251b3c75c0e75616605fed13c5ee3907 *inst/adelie/adelie/configs.py
 2d513f1c06afdf54c879caf2d53956d5 *inst/adelie/adelie/constraint.py
@@ -98,7 +98,7 @@ fb1c3eec773cce7542c6541c821fc6f5 *inst/adelie/adelie/src/include/adelie_core/mat
 8d0a71deb0497f4738a72dcb10bb7c5a *inst/adelie/adelie/src/include/adelie_core/matrix/matrix_naive_interaction.hpp
 a28b42be4f33cd0bbd0e769c8ad86a6a *inst/adelie/adelie/src/include/adelie_core/matrix/matrix_naive_interaction.ipp
 12590ef94f037b7775d768d9955bb901 *inst/adelie/adelie/src/include/adelie_core/matrix/matrix_naive_kronecker_eye.hpp
-7abd1cca07d0e56c4b893cc1ffc849e7 *inst/adelie/adelie/src/include/adelie_core/matrix/matrix_naive_kronecker_eye.ipp
+094d5126540e08e3f7057e0bcb5b9821 *inst/adelie/adelie/src/include/adelie_core/matrix/matrix_naive_kronecker_eye.ipp
 b08aced1aba4e82593c3b68977b689e3 *inst/adelie/adelie/src/include/adelie_core/matrix/matrix_naive_one_hot.hpp
 51666478c3b0ec5a162a56881735f8f3 *inst/adelie/adelie/src/include/adelie_core/matrix/matrix_naive_one_hot.ipp
 afc0c9d57e6bc7ffbeb1b24b8959f7cf *inst/adelie/adelie/src/include/adelie_core/matrix/matrix_naive_snp_phased_ancestry.hpp
@@ -122,7 +122,7 @@ f10e101e8ace179c3782b6158bef42b1 *inst/adelie/adelie/src/include/adelie_core/opt
 d8171f63efdc5fe35d671918d33d5861 *inst/adelie/adelie/src/include/adelie_core/optimization/pinball_full.hpp
 638baa5d93868cd05af11c1e59e2f30f *inst/adelie/adelie/src/include/adelie_core/optimization/search_pivot.hpp
 f25088a0b92a447426029ca657d32ab0 *inst/adelie/adelie/src/include/adelie_core/optimization/symmetric_penalty.hpp
-0931e6d9837db6be30bfaa2df871f832 *inst/adelie/adelie/src/include/adelie_core/solver/solver_base.hpp
+7187340aa2299ca06ca568dce5addd1a *inst/adelie/adelie/src/include/adelie_core/solver/solver_base.hpp
 f94f5281fef321f2f7a23fb35de0c4f8 *inst/adelie/adelie/src/include/adelie_core/solver/solver_bvls.hpp
 b64325f39ef6b410fa00b639139d377d *inst/adelie/adelie/src/include/adelie_core/solver/solver_css_cov.hpp
 60b0e6edcd3dc863b541100a58f9ead1 *inst/adelie/adelie/src/include/adelie_core/solver/solver_gaussian_cov.hpp
@@ -175,7 +175,7 @@ bbcf5e7cf76d8b59d88afca63c5ba7df *inst/adelie/adelie/src/include/adelie_core/uti
 e77a50e3df060a668e6b69296d2b7ab0 *inst/adelie/adelie/src/py_bcd.cpp
 5df81606cdf4b448502c0aeee6c6e222 *inst/adelie/adelie/src/py_configs.cpp
 8c51c562431411fa59ffb9dbd3e00247 *inst/adelie/adelie/src/py_constraint.cpp
-57ccb684359e17e9de0bc49c63fdf1fb *inst/adelie/adelie/src/py_decl.hpp
+2a0d3788af3e44685e1eb59297611458 *inst/adelie/adelie/src/py_decl.hpp
 63042c72ba9908cb034f7419b997a2ca *inst/adelie/adelie/src/py_glm.cpp
 f1224f47ccd30842716867a48109b602 *inst/adelie/adelie/src/py_io.cpp
 2dddee91874382852789eb83c2640303 *inst/adelie/adelie/src/py_matrix.cpp
@@ -244,7 +244,7 @@ a67f5a40fd05d917e06223d8d3dcc83f *inst/adelie/adelie/src/src/tools/types.hpp
 e92cf2d6d1d0d6ec67d1716fb4d817ef *inst/adelie/adelie/state.py
 afdd1b228a38024dfde3d422ce24ffd6 *inst/doc/adelie.R
 9994a1825e8bf4b8512a1e737f1d77ac *inst/doc/adelie.Rmd
-87b8f5a708914d2bd69179ac34d8d2ed *inst/doc/adelie.html
+d92f5e1de7a4ed5d050ce8a14f587966 *inst/doc/adelie.html
 690c4beb1560f20c991db99e30c9d68a *man/constraint.box.Rd
 ad014dcd94e310f4202ac5ba2f80b2b8 *man/cv.glintnet.Rd
 a1b4d4c943c7e7f636722ed9c7f46d99 *man/cv.grpnet.Rd
@@ -278,7 +278,7 @@ a13154d07a07a5f5834a8a948c859ee1 *man/plot.grpnet.Rd
 d44aaee889f5624fcdca280048641fcd *man/predict.cv.glintnet.Rd
 8e72bf10893d47e44640e209453f4e1a *man/predict.cv.grpnet.Rd
 512bab42c40c78ccc3ee9a83a34563f5 *man/predict.glintnet.Rd
-9d1c63934fb0ca24ca9d80af29caffad *man/predict.grpnet.Rd
+4c296bce2f16ff2a13b03dfcc189c2a9 *man/predict.grpnet.Rd
 6f4cf8b7943d8a10ce7c5eb4128b8bfa *man/print.cv.grpnet.Rd
 69f45ba68f0bb758b262e89def6452e0 *man/print.glintnet.Rd
 2f8eeba48c9b59e3b92e537c4453c77f *man/print.grpnet.Rd

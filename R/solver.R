@@ -393,9 +393,13 @@ grpnet <- function(
     if(inherits(X,"sparseMatrix")){
         X <- as(X,"CsparseMatrix")
         X <- matrix.sparse(X, method="naive", n_threads=n_threads)
+        # No special handling is required for sparse matrices for subsequent code.
+        X_raw <- X
     }
     if (is.matrix(X) || is.array(X) || is.data.frame(X)) {
         X <- matrix.dense(X, method="naive", n_threads=n_threads)
+        # Keep X_raw as raw dense matrix rather than adelie matrix.
+        # Multi-response can be optimized further using raw dense.
     }
     n <- X$rows
     p <- X$cols
@@ -403,7 +407,12 @@ grpnet <- function(
     weights <- as.double(glm$weights)
     if(standardize){
         if(intercept)centers=NULL else centers = rep(0.0,p)
-        X = matrix.standardize(X,centers=centers,weights=weights, n_threads=n_threads)
+        X <- matrix.standardize(X,centers=centers,weights=weights, n_threads=n_threads)
+        if (is.matrix(X_raw) || is.array(X_raw) || is.data.frame(X_raw)) {
+            X_raw <- scale(X_raw, attr(X,"_centers"),attr(X,"_scales"))
+        } else {
+            X_raw <- X
+        }
     }
     if (is.null(dim(y))) {
         y <- as.double(y)
