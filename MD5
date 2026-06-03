@@ -1,14 +1,14 @@
-c2fee56b124640369041bb47ad1a09bb *DESCRIPTION
+86d51f304131dae517e863e547fcd2f3 *DESCRIPTION
 e4638bc3bd58615894b80f683a634d65 *LICENSE
 a72589e5b8423474371d54cdcb5f7914 *NAMESPACE
-099187bc5978d9420a75ea5c6521e670 *NEWS.md
+bd84e4cb9daba39479d8c1cfcb938dcc *NEWS.md
 ef114c14ceaf35077ae0ebf6f2150b77 *R/adelie-package.R
 9e9d113e027b0fa0b4c87511361e39ce *R/configs.R
 3c5cd69e9a36e39696bc8474abc1d0f5 *R/constraints.R
 4620e8486e02a8046e093ac93a2fd5d0 *R/glintnet.R
 ab63341d28713296d0c194c194e424aa *R/glm.R
 f93b1d35b66c67bf2964b702fc307488 *R/io.R
-74e51f27047c054558f5a02227d6658a *R/matrix.R
+3552b6526446f7a7c316656ae950f08a *R/matrix.R
 a641ff6e3791cd506d7fc6e1c81e3d89 *R/onAttach.R
 5f50c380a5baf142c08f26467e34e4a7 *R/solver.R
 aa0410a357410388f7320c5634e30094 *R/state.R
@@ -94,7 +94,7 @@ ff9f25404ff177c03d28442c92df0afa *inst/adelie/adelie/src/include/adelie_core/mat
 129dd04527d613d7e5204773a2a53ee1 *inst/adelie/adelie/src/include/adelie_core/matrix/matrix_naive_convex_relu.hpp
 1012aa1bc18d05d24dbeac6beb295a59 *inst/adelie/adelie/src/include/adelie_core/matrix/matrix_naive_convex_relu.ipp
 6bd0fdf9d45b7e7e7d69ecd62e6fe628 *inst/adelie/adelie/src/include/adelie_core/matrix/matrix_naive_dense.hpp
-fb1c3eec773cce7542c6541c821fc6f5 *inst/adelie/adelie/src/include/adelie_core/matrix/matrix_naive_dense.ipp
+5657fd3843bf1fcd8b1346623dd93d1a *inst/adelie/adelie/src/include/adelie_core/matrix/matrix_naive_dense.ipp
 8d0a71deb0497f4738a72dcb10bb7c5a *inst/adelie/adelie/src/include/adelie_core/matrix/matrix_naive_interaction.hpp
 a28b42be4f33cd0bbd0e769c8ad86a6a *inst/adelie/adelie/src/include/adelie_core/matrix/matrix_naive_interaction.ipp
 12590ef94f037b7775d768d9955bb901 *inst/adelie/adelie/src/include/adelie_core/matrix/matrix_naive_kronecker_eye.hpp
@@ -244,7 +244,7 @@ a67f5a40fd05d917e06223d8d3dcc83f *inst/adelie/adelie/src/src/tools/types.hpp
 e92cf2d6d1d0d6ec67d1716fb4d817ef *inst/adelie/adelie/state.py
 afdd1b228a38024dfde3d422ce24ffd6 *inst/doc/adelie.R
 9994a1825e8bf4b8512a1e737f1d77ac *inst/doc/adelie.Rmd
-d92f5e1de7a4ed5d050ce8a14f587966 *inst/doc/adelie.html
+a2aca764d179f2e90099a986923a9409 *inst/doc/adelie.html
 690c4beb1560f20c991db99e30c9d68a *man/constraint.box.Rd
 ad014dcd94e310f4202ac5ba2f80b2b8 *man/cv.glintnet.Rd
 a1b4d4c943c7e7f636722ed9c7f46d99 *man/cv.grpnet.Rd

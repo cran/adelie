@@ -227,6 +227,7 @@ ADELIE_CORE_MATRIX_NAIVE_DENSE::sp_tmul(
         v.rows(), v.cols(), out.rows(), out.cols(), rows(), cols()
     );
     if (_n_threads <= 1) {
+        Eigen::setNbThreads(_n_threads);
         out.noalias() = v * _mat.transpose();
         return;
     }
